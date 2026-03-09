@@ -1,0 +1,115 @@
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+}
+
+model User {
+  id                 Int      @id @default(autoincrement())
+  phone_number       String   @unique
+  name               String?
+  preferred_language String?  @default("en")
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+  cases              Case[]
+
+  @@index([phone_number])
+  @@map("users")
+}
+
+model Constituency {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  code  String?
+  wards Ward[]
+  cases Case[]
+
+  @@map("constituencies")
+}
+
+model Ward {
+  id              Int          @id @default(autoincrement())
+  name            String
+  constituency    Constituency @relation(fields: [constituency_id], references: [id], onDelete: Cascade)
+  constituency_id Int
+  code            String?
+  cases           Case[]
+
+  @@unique([name, constituency_id])
+  @@index([constituency_id])
+  @@map("wards")
+}
+
+model Case {
+  id                          Int          @id @default(autoincrement())
+  case_id                     String       @unique
+  case_type                   String
+  sub_type                    String
+  reporter                    User         @relation(fields: [reporter_id], references: [id])
+  reporter_id                 Int
+  reporter_phone              String
+  reporter_name               String?
+  reporter_permission_contact Boolean?     @default(true)
+  constituency                Constituency? @relation(fields: [constituency_id], references: [id])
+  constituency_id             Int?
+  ward                        Ward?        @relation(fields: [ward_id], references: [id])
+  ward_id                     Int?
+  landmark                    String?
+  latitude                    Decimal?
+  longitude                   Decimal?
+  status                      String       @default("submitted")
+  priority                    String       @default("medium")
+  severity_dangerous          Boolean?     @default(false)
+  severity_trapped            Boolean?     @default(false)
+  severity_worsening          Boolean?     @default(false)
+  people_affected             Int?         @default(0)
+  details                     Json?
+  assigned_department         String?
+  assigned_to                 String?
+  media_count                 Int?         @default(0)
+  created_at                  DateTime     @default(now())
+  updated_at                  DateTime     @updatedAt
+  resolved_at                 DateTime?
+  deleted_at                  DateTime?
+  media                       CaseMedia[]
+  updates                     CaseUpdate[]
+
+  @@index([case_id])
+  @@index([reporter_id])
+  @@index([status])
+  @@index([priority])
+  @@index([created_at])
+  @@map("cases")
+}
+
+model CaseMedia {
+  id              Int      @id @default(autoincrement())
+  case            Case     @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  case_id         Int
+  file_type       String
+  file_url        String
+  file_size_bytes Int?
+  mime_type       String?
+  uploaded_at     DateTime @default(now())
+
+  @@index([case_id])
+  @@map("case_media")
+}
+
+model CaseUpdate {
+  id              Int      @id @default(autoincrement())
+  case            Case     @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  case_id         Int
+  status_from     String?
+  status_to       String?
+  updated_by      String?
+  update_message  String?
+  visible_to_user Boolean? @default(true)
+  created_at      DateTime @default(now())
+
+  @@index([case_id])
+  @@map("case_updates")
+}
